@@ -1,0 +1,14 @@
+{
+  "mainMenu": "Bot description or another info and Main menu buttons",
+  "buttons": {
+    "wizard": "Wizard",
+    "alert": "Message on top",
+    "getPhoto": "Get photo",
+    "changeLang": "Change language",
+    "continue": "Continue",
+    "back": "Back"
+  },
+  "errors": {
+    "somethingWrong": "It's not text!"
+  }
+}

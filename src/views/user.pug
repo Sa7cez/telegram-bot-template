@@ -1,0 +1,15 @@
+extends layout
+
+block body
+  section.section
+    .container.is-flex(style="height: 100%; align-content: center;")
+      .content(style="max-width: 650px; margin: auto; background-color: rgba(44,44,44, 0.9); padding: 2rem; border-radius: 0.5rem;")
+        h1.has-text-centered #{user.first_name} #{user.last_name}
+
+        // Other info
+
+        .buttons.is-centered
+          if user.username
+            a.button.is-success(href="https://t.me/" + user.username) Write user »
+          a.button.is-success(href="/" + user.id + "/message")  Notify from bot »
+
