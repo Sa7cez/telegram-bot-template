@@ -1,23 +1,27 @@
 require('dotenv').config()
 const path = require('path')
+const fs = require('fs')
+const { readFile, writeFile, readdir } = require("fs").promises
 const Telegraf = require('telegraf')
 const TelegrafI18n = require('telegraf-i18n')
-const Stage = require('telegraf/stage')
-const WizardScene = require('telegraf/scenes/wizard')
 const Extra = require('telegraf/extra')
 const AnyCase = require('telegraf-anycase-commands')
 const mongoose = require('mongoose')
 const { TelegrafMongoSession } = require('telegraf-session-mongodb')
 const delay = require('delay')
 const axios = require('axios')
+const { GoogleSpreadsheet } = require('google-spreadsheet')
+const creds = require('./weighty-obelisk-289112-9d724e80c44b.json')
 
 // Constants
 const URL = process.env.URL
 const TOKEN = process.env.TOKEN
 const BOTNAME = process.env.BOTNAME
 const GROUP_ID = process.env.GROUP_ID
-const MODERATORS = process.env.MODERATORS?.split(',') || [ 123456789 ]
+const MODERATORS = process.env.MODERATORS?.replace(' ', '').split(',').map(Number) || [ 123456789 ]
 const ADMIN = MODERATORS[0]
+console.log('MODERATORS', MODERATORS)
+
 const isModerator = (id) => MODERATORS.includes(id)
 
 // Languages
@@ -116,13 +120,14 @@ const getUser = (ctx, id) => {
     .then(users => {
       users = users.filter(user => user.data.id)
 
-      if (users.length <= 0)
-        return ctx.reply('User not found :(')
-
-      return Promise.all(users.map(async user => {
-        user = user.data
-        
-        return `
+      if (users.length <= 0) {
+        // ctx.reply('User not found :(')
+        return false
+      } else {
+        return Promise.all(users.map(async user => {
+          user = user.data
+          
+          return `
 *ID:* ${user.id} - [@${user.username}](https://t.me/${user.username})
 Name: \`${user.first_name} ${user.last_name || ''}\` ${user.language_code ? ('(' + user.language_code + ')') : ''}
 
@@ -130,15 +135,16 @@ Register: ${user.registered_at.toString().replace('GMT+0500 ', '')}
 Active: ${user.active_at.toString().replace('GMT+0500 ', '')}
 
 `
-      })).then(values => {
-        values.map(msg => {
-          ctx.replyWithMarkdown(msg, users.length === 1 ? userButtons(users[0].data) : Extra.markdown())
-            .catch((e) => {
-              console.log(e)
-              ctx.reply(msg, Extra.HTML())
-            })
+        })).then(values => {
+          values.map(msg => {
+            ctx.replyWithMarkdown(msg, users.length === 1 ? userButtons(users[0].data) : Extra.markdown())
+              .catch((e) => {
+                console.log(e)
+                ctx.reply(msg, Extra.HTML())
+              })
+          })
         })
-      })
+      }
     }).catch((e) => {
       console.log(e)
     })
@@ -149,65 +155,109 @@ bot
   .hears(/^\/info[ =](.+)$/, ctx => getUser(ctx, ctx.match[1]))
 
 // Custom buttons helpers for easy bots (or use telegraf-inline-menu library)
-const singleButton = (text, action) => Extra.webPreview(false).markdown().markup((m) => m.inlineKeyboard([[m.callbackButton(text || 'No text!', action || false)]]))
+const singleButton = (text, action) => Extra.markdown().markup((m) => m.inlineKeyboard([[m.callbackButton(text || 'No text!', action || false)]]))
 const twoButtons = (first_text, first_action, second_text, second_action) => Extra.webPreview(false).markdown().markup((m) => m.inlineKeyboard([[m.callbackButton(first_text, first_action), m.callbackButton(second_text, second_action)]]))
 const twoMultilineButtons = (first_text, first_action, second_text, second_action) => Extra.webPreview(false).markdown().markup((m) => m.inlineKeyboard([[m.callbackButton(first_text, first_action)],[m.callbackButton(second_text, second_action)]]))
-
-const buttons = (ctx, markdown = true) => {
-  let mark = Extra.webPreview(false)
-  mark = markdown ? mark.markdown() : mark.HTML()
-
-  return mark.markup((m) => m.inlineKeyboard([
-    [m.callbackButton(ctx.i18n.t('buttons.wizard'), 'wizard'), m.callbackButton(ctx.i18n.t('buttons.getPhoto'), 'getPhoto')],
-    [m.callbackButton(ctx.i18n.t('buttons.alert'), 'alert')],
-    [m.callbackButton(ctx.i18n.t('buttons.changeLang'), 'changeLang')]
-  ]))
-}
-
 const buttonsWithURL = (anchor, url, button_text, button_action) => Extra.markdown().markup((m) => m.inlineKeyboard([[m.urlButton(anchor, url)], [m.callbackButton(button_text, button_action)]]))
 
-// Main menu
-const main = (ctx) => ctx.reply(ctx.i18n.t('mainMenu'), buttons(ctx))
+let instructions = {}
+let CLOSED = false
 
-const wizardExample = new WizardScene('wizardExample',
-  (ctx) => {
-    ctx.replyWithMarkdown('Question 1? Input answer:', singleButton(ctx.i18n.t('buttons.continue'), 'skip'))
-    ctx.wizard.next()
-  },
-  async (ctx) => {
-    try {
-      const data = ctx.message.text.trim().toLowerCase()
-      if (data) {
-        ctx.replyWithMarkdown(`*You message:* \`\`\`${data}\`\`\``)
-        ctx.wizard.next()
-      } else {
-        throw new Error('Debug message!')
-      }
-    } catch (e) {
-      ctx.reply(ctx.i18n.t('errors.somethingWrong'))
+let langs = {
+  "en": "🇺🇸 English",
+  "ru": "🇷🇺 Русский",
+  "es": "🇪🇸 Español",
+  "id": "🇮🇩 Bahasa Indonesia",
+  "pt": "🇵🇹 Português",
+  "vi": "🇻🇳 Tiếng Việt"
+}
+
+const parseGoogle = async (url = 'https://docs.google.com/spreadsheets/d/1ZuRuV8K1kj5J03uoupLLdinzibooZl93OqQDRSAquVk/edit#gid=0') => {
+  bot.telegram.sendMessage(ADMIN, 'Парсим гугл').catch(e => console.log(e))
+  let temp = {}
+  try {
+    let id = /\/([\w-_]{15,})\/(.*?gid=(\d+))?/.exec(url)
+    const doc = new GoogleSpreadsheet(id[1])
+    await doc.useServiceAccountAuth(creds)
+    await doc.loadInfo()
+
+    for (let sheetIndex = 0; sheetIndex < doc.sheetCount; sheetIndex++) {
+      const sheet = await doc.sheetsByIndex[sheetIndex]
+      const rows = await sheet.getRows();
+      let device = 'browser'
+      Object.keys(langs).forEach(lang => temp[lang] = [])
+      
+      rows.forEach((row, index) => {
+        if (row.device) device = row.device.toLowerCase();
+        if (row.state === 'OFF') CLOSED = true
+        Object.keys(langs).forEach(lang => {
+          let langlink = `${lang}_link`
+          if (row[langlink]) {
+            temp[lang].push({
+              id: index,
+              device: device,
+              title: row[lang],
+              link: row[langlink]
+            })
+          }
+        })
+
+      })
     }
-  },
-  async (ctx) => {
-    await ctx.reply('Message 2')
-    ctx.scene.leave()
-  })
-  .action('skip', ctx => {
-    ctx.replyWithMarkdown('You skip question!')
-    ctx.scene.leave()
-  })
-  .leave(ctx => {
-    ctx.reply('Wizard scene leave!')
-  })
+
+    if (Object.keys(temp).length > 0)
+      writeFile('instructions.json', JSON.stringify(temp))
+
+  } catch (e) {
+    console.log(e)
+  }
+
+  return temp
+}
+
+const getUserArticles = (ctx) => instructions[ctx.i18n.locale()]?.filter(item => item.device === ctx.session.device) || []
+
+const list = async (ctx, markdown = true) => {
+  let mark = Extra.webPreview(false)
+  if (markdown) mark = mark.markdown()
+  else mark = mark.HTML()
+  
+  let buttons = []
+
+  if (Object.keys(instructions).length <= 0) instructions = await parseGoogle()
+  let articles = await getUserArticles(ctx)
+
+  if (articles.length === 0)
+    return changeDevice(ctx)
+  
+  articles.map(item => buttons.push(ib(item.title, `link_${item.id}`)))
+  
+  buttons.push([
+    { text: ctx.i18n.t('buttons.back'), callback_data: 'changeDevice' },
+    { text: ctx.i18n.t('buttons.changeLang'), callback_data: 'changeLang' }
+  ])
+
+  if (isModerator(ctx.session.id)) buttons.push(ib('Скачать обновки с гугла', 'refresh'))
+
+  return mark.markup((m) => m.inlineKeyboard(buttons))
+}
+
+// Main menu
+
+const changeDevice = (ctx) => ctx.reply(ctx.i18n.t('device'), twoButtons(ctx.i18n.t('buttons.browser'), 'browser', ctx.i18n.t('buttons.mobile'), 'mobile'))
+
+const main = async (ctx) => {
+  if (!ctx.session.device) return changeDevice(ctx)
+  ctx.reply(ctx.i18n.t('mainMenu'), await list(ctx)).catch(e => console.log(e))
+}
 
 // Command and other
-const stage = new Stage([ wizardExample ])
 AnyCase.apply(bot)
 
 // Bot start, actions, commands
 let session
 bot.use((...args) => session.middleware(...args))
 bot.use(i18n.middleware())
-bot.use(stage.middleware())
 bot.use(async (ctx, next) => {
   const start = new Date()
   
@@ -236,10 +286,24 @@ bot.use(async (ctx, next) => {
 
     // User forward and finder
     if (isModerator(ctx.session.id)) {
-      if (ctx.update && ctx.update.message && (ctx.update.message.forward_from || ctx.update.message.forward_sender_name))
-        return getUser(ctx, (ctx.update.message.forward_from && ctx.update.message.forward_from.id) || ctx.update.message.forward_sender_name)
+      console.log('what')
+      console.log(ctx)
+      if (ctx?.update?.message?.forward_from || ctx?.update?.message?.forward_sender_name || ctx?.update?.message?.forward_from_chat) {
+        console.log('the')
+        if (ctx.session.send_mode) {
+          console.log('problem?')
+          ctx.session.send_message = ctx.message
+          return ctx.reply(`Сообщение выше ^^^^.\n\nФильтр рассылки: "*${ctx.session.send_mode}*"\nПодходящих пользователей: *${ctx.session.send_users}*\n\nВы готовы?`, singleButton('Начать рассылку!', 'send_spam'))
+        } else {
+          if (!(await getUser(ctx, (ctx.update.message.forward_from && ctx.update.message.forward_from.id) || ctx.update.message.forward_sender_name)))
+            return ctx.reply('У вас не выбран режим рассылки!\n\nДля начала введите команду /send_to_all, /send_to_ru, /send_to_en и другие...')
+        }
+      }
     }
   }
+
+  if (CLOSED)
+    ctx.reply(ctx.i18n.t('errors.mainterance'))
 
   return next()
     .then(() => {
@@ -266,22 +330,19 @@ bot
     }))
 
 // Lang switcher
-const langsList = ['ru', 'en']
-const toLangs = (ctx) => ctx.replyWithMarkdown('🇷🇺 Выберите язык / Choose language 🇬🇧', Extra
-  .webPreview(false).markdown()
-  .markup((m) => m.inlineKeyboard([
-    [
-      m.callbackButton('🇷🇺 Русский', 'ru'),
-      m.callbackButton('🇺🇸 English', 'en')
-    ],
-    // [
-    //   m.callbackButton('🇪🇸 Español', 'es'),
-    //   m.callbackButton('🇮🇩 Indonesia', 'id')
-    // ],
-    // [
-    //   m.callbackButton('🇵🇹 Português', 'pt')
-    // ]
-  ])))
+const toLangs = (ctx) => {
+  let buttons = []
+  Object.keys(langs).forEach((lang, index) => { 
+    if (instructions[lang].length > 0)
+      buttons.push(ib(Object.values(langs)[index], lang))
+  })
+  ctx.replyWithMarkdown('*Choose language:*', 
+    Extra
+      .webPreview(false)
+      .markdown()
+      .markup((m) => m.inlineKeyboard(buttons))
+  )
+}
 
 // Actions
 bot
@@ -301,26 +362,34 @@ bot
     if (!ctx.session.lang)
       return toLangs(ctx)
   })
-  .action(langsList, ctx => {
+  .action(Object.keys(langs), ctx => {
     ctx.i18n.locale(ctx.match)
+    ctx.answerCbQuery('Ok!')
     return main(ctx)
   })
-  .action('wizard', (ctx) => {
-    return ctx.scene.enter('wizardExample')
+  .action(['browser', 'mobile'], ctx => {
+    ctx.session.device = ctx.match
+    ctx.answerCbQuery('Ok!')
+    return main(ctx)
   })
-  .action('alert', (ctx) => {
-    return ctx.answerCbQuery('message!')
-  })
-  .action('getPhoto', async (ctx) => {
-    let mark = buttons(ctx)
-    mark.caption = `photo *description* _italic_`
-    return ctx.replyWithPhoto(`https://picsum.photos/640/480`, mark)
-  })
-  .action('back', (ctx, next) => {
-    ctx.scene.leave()
-    return next()
+  .action(/link_(.+)/, ctx => {
+    try {
+      const article = getUserArticles(ctx).filter(item => item.id === parseInt(ctx.match[1]))[0]
+      ctx.reply(`*${article.title}*\n\n${article.link}`, singleButton(ctx.i18n.t('buttons.back'), 'back'))
+    } catch (e) {
+      ctx.reply(ctx.i18n.t('errors.somethingWrong'), singleButton(ctx.i18n.t('buttons.back'), 'back'))
+    }
   })
   .action('changeLang', (ctx) => toLangs(ctx))
+  .action('changeDevice', (ctx) => changeDevice(ctx))
+  .action('refresh', async ctx => {
+    ctx.answerCbQuery('Скачиваем!')
+    instructions = await parseGoogle()
+    return main(ctx)
+  })
+  .action('refresh', async ctx => {
+    const links = instructions.map()
+  })
 
 // Telegram command settings (dropdown on interface or input)
 bot.settings(async (ctx) => {
@@ -333,6 +402,73 @@ bot.help(async (ctx) => {
   let commands = await ctx.getMyCommands()
   const info = commands.reduce((acc, val) => `${acc}/${val.command} - ${val.description}\n\n`, '')
   return ctx.reply(info)
+})
+
+// Сендер
+const getUsers = async (mode) => {
+  let users = []
+  if (mode === 'all')
+    users = await Users.find({'data.id': { $ne: null }}).sort('registered_at').select('data.id').then(users => [...new Set(users.map(user => user.data.id))])
+  if (Object.keys(langs).includes(mode))
+    users = await Users.find({
+      'data.id': { $ne: null },
+      'data.__language_code': mode
+    }).sort('registered_at').select('data.id').then(users => [...new Set(users.map(user => user.data.id))])
+  if (parseInt(mode) > 0)
+    users = await Users.find({ 'data.id': parseInt(mode) }).select('data.id').then(users => [...new Set(users.map(user => user.data.id))])
+  return users
+}
+
+bot.hears(/^\/send_to_([a-z\d]*)[ =]*([\n\s]*.+)*$/, async ctx => {
+  let mode = ctx.match[1]
+  console.log(ctx.message.text)
+  let message = ctx.message.text.replace(/^\/send_to_([a-z\d]*)[ =]*/g, '')
+  console.log(message)
+  if(isModerator(ctx.from.id)) {
+    ctx.reply('Выбран режим "' + mode + '", собираем базу...')
+    let users = await getUsers(mode)
+    ctx.session.send_mode = mode
+    ctx.session.send_users = users.length
+    if (message.length > 5) {
+      console.log(message)
+      ctx.session.send_message = message
+      return ctx.reply(`Фильтр рассылки: "*${ctx.session.send_mode}*"\nПодходящих пользователей: *${ctx.session.send_users}*\nСообщение:\n\n${message}\n\nВы готовы?`, singleButton('Начать рассылку!', 'send_spam'))
+    }
+    return ctx.reply(`Найдено ${users.length} подходящих под фильтр "${mode}" пользователей.\n\nСверстайте и перешлите в бот сообщение, которое хотите им разослать. Бот создаст его точную копию и начнет рассылку, как только получит подтверждение, что вы готовы.`)
+  }
+  ctx.reply('Не хватает прав для этой команды!')
+})
+
+bot.action('send_spam', async ctx => {
+  ctx.deleteMessage()
+  let users = await getUsers(ctx.session.send_mode)
+  return Promise.all(users.map(async (id, index) => {
+    await delay(100 * index)
+    let send_to = process.env.NODE_ENV === 'development1'
+      ? ctx.from.id
+      : id
+
+    if (typeof ctx.session.send_message === "string")
+      return bot.telegram.sendMessage(send_to, ctx.session.send_message, singleButton('OK »', 'back'))
+        .then(msg => {
+          console.log(send_to,': отправлено')
+          return { chat_id: send_to, msg_id: msg.message_id }
+        })
+        .catch(e => {
+          return false
+        })  
+    return bot.telegram.sendCopy(send_to, ctx.session.send_message)
+    .then(msg => {
+      console.log(send_to,': отправлено')
+      return { chat_id: send_to, msg_id: msg.message_id }
+    })
+    .catch(e => {
+      return false
+    })
+  })).then(values => {
+    values = values.filter(Boolean)
+    return MODERATORS.map(user => bot.telegram.sendMessage(user.id, `Рассылка закончена!\nПолучили: *${values.length}*\nОшибок: *${(users.length - values.length)}*`, singleButton('OK »', 'back')))
+  })
 })
 
 // All other messages
@@ -356,6 +492,16 @@ db.once('open', async () => {
       bot.telegram.sendMessage(ADMIN, 'Bot start polling!').catch(e => console.log(e))
       // Sometimes you may want UP you current production bot
       // production.telegram.sendMessage(ADMIN, 'Bot polling mode!')
+    }
+    try {
+      instructions = JSON.parse(fs.readFileSync('instructions.json'))
+      if (Object.keys(instructions).length <= 0) instructions = await parseGoogle()
+      setInterval(async () => {
+        instructions = await parseGoogle()
+      }, 1000 * 60 * 60)
+
+    } catch (e) {
+      bot.telegram.sendMessage(ADMIN, e.message).catch(e => console.log(e))
     }
   } else {
     console.error('Session database error!')

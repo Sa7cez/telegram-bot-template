@@ -1,0 +1,16 @@
+{
+  "mainMenu": "*Instruções*\n\nInstruções detalhadas preparadas para trabalhar com o IBT Token e o Pool X3.14.\n\nBasta escolher o tópico certo e aprender sobre tudo o que você precisa para um trabalho eficaz!",
+  "device": "Selecione o dispositivo no qual você vai se registrar:",
+  "buttons": {
+    "browser": "Computador",
+    "mobile": "Telefone",
+    "changeDevice": "Altere o dispositivo",
+    "changeLang": "Cmudar idioma",
+    "continue": "Continuar",
+    "back": "Costas"
+  },
+  "errors": {
+    "somethingWrong": "Algo deu errado!",
+    "mainterance": "O bot está temporariamente indisponível!"
+  }
+}

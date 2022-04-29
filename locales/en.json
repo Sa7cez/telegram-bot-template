@@ -1,14 +1,16 @@
 {
-  "mainMenu": "Bot description or another info and Main menu buttons",
+  "mainMenu": "*Instructions*\n\nPrepared detailed instructions for working with IBT token and pool x3.14.\n\nJust choose the right topic and learn about everything you need for effective work!",
+  "device": "Select the device on which you are going to register:",
   "buttons": {
-    "wizard": "Wizard",
-    "alert": "Message on top",
-    "getPhoto": "Get photo",
+    "browser": "Computer",
+    "mobile": "Phone",
+    "changeDevice": "Change the device",
     "changeLang": "Change language",
-    "continue": "Continue",
+    "continue": "Proceed »",
     "back": "Back"
   },
   "errors": {
-    "somethingWrong": "It's not text!"
+    "somethingWrong": "Something went wrong!",
+    "mainterance": "The bot is temporarily unavailable!"
   }
 }

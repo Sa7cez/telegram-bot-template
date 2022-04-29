@@ -6,8 +6,10 @@
   "scripts": {
     "start": "nodemon start index.js --ignore '*.json'",
     "lint": "eslint .",
-    "deploy": "git add -A && git commit -m \"Deploy to heroku\" && git push heroku master && heroku logs --tail --dyno=web",
-    "logs": "heroku logs --tail --dyno=web"
+    "heroku_deploy": "git add -A && git commit -m \"Deploy to heroku\" && git push heroku master && heroku logs --tail --dyno=web",
+    "heroku_logs": "heroku logs --tail --dyno=web",
+    "deploy": "git add -A && git commit -m \"Update\" && git push && caprover deploy -n captain-01 -a xp-instructions-bot && npm run logs",
+    "logs": "ssh root@captain.dev.x314.one 'docker service logs srv-captain--xp-instructions-bot --follow --no-task-ids'"
   },
   "author": "None",
   "license": "ISC",
@@ -21,6 +23,7 @@
     "express": "^4.17.1",
     "express-minify": "^1.0.0",
     "force-ssl-heroku": "^1.0.2",
+    "google-spreadsheet": "^3.2.0",
     "moment": "^2.29.1",
     "moment-timezone": "^0.5.33",
     "mongoose": "^5.9.9",
