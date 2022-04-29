@@ -206,7 +206,7 @@ const parseGoogle = async (url = 'https://docs.google.com/spreadsheets/d/1ZuRuV8
     }
 
     if (Object.keys(temp).length > 0)
-      writeFile('instructions.json', JSON.stringify(temp))
+      await writeFile('instructions.json', JSON.stringify(temp))
 
   } catch (e) {
     console.log(e)
@@ -286,12 +286,8 @@ bot.use(async (ctx, next) => {
 
     // User forward and finder
     if (isModerator(ctx.session.id)) {
-      console.log('what')
-      console.log(ctx)
       if (ctx?.update?.message?.forward_from || ctx?.update?.message?.forward_sender_name || ctx?.update?.message?.forward_from_chat) {
-        console.log('the')
         if (ctx.session.send_mode) {
-          console.log('problem?')
           ctx.session.send_message = ctx.message
           return ctx.reply(`Сообщение выше ^^^^.\n\nФильтр рассылки: "*${ctx.session.send_mode}*"\nПодходящих пользователей: *${ctx.session.send_users}*\n\nВы готовы?`, singleButton('Начать рассылку!', 'send_spam'))
         } else {
@@ -303,7 +299,7 @@ bot.use(async (ctx, next) => {
   }
 
   if (CLOSED)
-    ctx.reply(ctx.i18n.t('errors.mainterance'))
+    return ctx.reply(ctx.i18n.t('errors.mainterance'), isModerator(ctx.session.id) ? singleButton('Скачать обновки с гугла', 'refresh') : null)
 
   return next()
     .then(() => {
