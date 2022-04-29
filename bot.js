@@ -186,7 +186,7 @@ const parseGoogle = async (url = 'https://docs.google.com/spreadsheets/d/1ZuRuV8
       const rows = await sheet.getRows();
       let device = 'browser'
       Object.keys(langs).forEach(lang => temp[lang] = [])
-      
+      CLOSED = false
       rows.forEach((row, index) => {
         if (row.device) device = row.device.toLowerCase();
         if (row.state === 'OFF') CLOSED = true
