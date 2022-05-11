@@ -173,7 +173,7 @@ let langs = {
 }
 
 const parseGoogle = async (url = 'https://docs.google.com/spreadsheets/d/1ZuRuV8K1kj5J03uoupLLdinzibooZl93OqQDRSAquVk/edit#gid=0') => {
-  bot.telegram.sendMessage(ADMIN, 'Парсим гугл').catch(e => console.log(e))
+  // bot.telegram.sendMessage(ADMIN, 'Парсим гугл').catch(e => console.log(e))
   let temp = {}
   try {
     let id = /\/([\w-_]{15,})\/(.*?gid=(\d+))?/.exec(url)
