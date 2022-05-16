@@ -381,10 +381,19 @@ bot
   .action('refresh', async ctx => {
     ctx.answerCbQuery('Скачиваем!')
     instructions = await parseGoogle()
+    await ctx.reply(['Для подгрузки превью введите команду /preview'])
     return main(ctx)
   })
-  .action('refresh', async ctx => {
-    const links = instructions.map()
+  .command('preview', async ctx => {
+    let links = []
+    await Promise.all(Object.values(instructions).map(lang => {
+      links = [...links, ...lang.map(item => item.link)]
+    }))
+    links.forEach(async (link, index) => {
+      await delay(300 * index)
+      console.log(link)
+      ctx.reply(link)
+    })
   })
 
 // Telegram command settings (dropdown on interface or input)
