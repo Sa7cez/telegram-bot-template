@@ -286,7 +286,7 @@ const changeDevice = (ctx) => ctx.reply(ctx.i18n.t('device'), twoButtons(ctx.i18
 
 const main = async (ctx) => {
   if (!ctx.session.device) return changeDevice(ctx)
-  ctx.reply(ctx.i18n.t('mainMenu'), await categories(ctx)).catch(e => console.log(e))
+  ctx.reply(ctx.i18n.t('mainMenu') + '\n\n*' + ctx.i18n.t('category') + ':*', await categories(ctx)).catch(e => console.log(e))
 }
 
 // Command and other
