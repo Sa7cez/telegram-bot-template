@@ -1,6 +1,8 @@
 {
   "mainMenu": "*Instructions*\n\nPrepared detailed instructions for working with IBT token and pool x3.14.\n\nJust choose the right topic and learn about everything you need for effective work!",
   "device": "Pilih perangkat tempat Anda akan mendaftar:",
+  "category": "Pilih kategori",
+  "instruction": "Pilih instruksi",
   "buttons": {
     "browser": "Komputer",
     "mobile": "Telepon",

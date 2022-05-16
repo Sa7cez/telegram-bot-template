@@ -181,32 +181,45 @@ const parseGoogle = async (url = 'https://docs.google.com/spreadsheets/d/1ZuRuV8
     await doc.useServiceAccountAuth(creds)
     await doc.loadInfo()
 
-    for (let sheetIndex = 0; sheetIndex < doc.sheetCount; sheetIndex++) {
-      const sheet = await doc.sheetsByIndex[sheetIndex]
-      const rows = await sheet.getRows();
-      let device = 'browser'
-      let category = 'none'
-      Object.keys(langs).forEach(lang => temp[lang] = [])
-      CLOSED = false
-      rows.forEach((row, index) => {
-        if (row.device) device = row.device.toLowerCase();
-        if (row.category) category = row.category;
-        if (row.state === 'OFF') CLOSED = true
-        Object.keys(langs).forEach(lang => {
-          let langlink = `${lang}_link`
-          if (row[langlink]) {
-            temp[lang].push({
-              id: index,
-              device: device,
-              category: category,
-              title: row[lang],
-              link: row[langlink]
-            })
-          }
-        })
+    let sheet = await doc.sheetsByIndex[1]
+    let categories = await sheet.getRows();
+    let catNames = {}
+    Object.keys(langs).forEach(lang => catNames[lang] = {})
+    categories.forEach((row, index) => {
+      catNames.ru[row.KEY] = row.RU
+      catNames.en[row.KEY] = row.EN
+      catNames.es[row.KEY] = row.ES
+      catNames.vi[row.KEY] = row.VI
+      catNames.pt[row.KEY] = row.PT
+      catNames.id[row.KEY] = row.ID
+    })
+    console.log(catNames)
 
+    sheet = await doc.sheetsByIndex[0]
+    let articles = await sheet.getRows();
+    let device = 'browser'
+    let category = 'none'
+
+    Object.keys(langs).forEach(lang => temp[lang] = [])
+    CLOSED = false
+    articles.forEach((row, index) => {
+      if (row.device) device = row.device.toLowerCase();
+      if (row.category) category = row.category;
+      if (row.state === 'OFF') CLOSED = true
+      Object.keys(langs).forEach(lang => {
+        let langlink = `${lang}_link`
+        if (row[langlink]) {
+          temp[lang].push({
+            id: index,
+            device: device,
+            category: catNames[lang][category],
+            title: row[lang],
+            link: row[langlink]
+          })
+        }
       })
-    }
+
+    })
 
     if (Object.keys(temp).length > 0)
       await writeFile('instructions.json', JSON.stringify(temp))
@@ -252,7 +265,6 @@ const categories = async (ctx, markdown = true) => {
 
   if (Object.keys(instructions).length <= 0) instructions = await parseGoogle()
   let articles = getUserCategories(ctx)
-  console.log(articles)
 
   if (articles.length === 0)
     return changeDevice(ctx)
@@ -396,7 +408,6 @@ bot
     return main(ctx)
   })
   .action(/category_(.+)/, async ctx => {
-    console.log(getUserCategories(ctx)[ctx.match[1]])
     return ctx.reply(ctx.i18n.t('mainMenu'), await list(ctx, getUserCategories(ctx)[ctx.match[1]])).catch(e => console.log(e))
   })
   .action(/link_(.+)/, ctx => {

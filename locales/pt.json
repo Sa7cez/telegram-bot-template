@@ -1,6 +1,8 @@
 {
   "mainMenu": "*Instruções*\n\nInstruções detalhadas preparadas para trabalhar com o IBT Token e o Pool X3.14.\n\nBasta escolher o tópico certo e aprender sobre tudo o que você precisa para um trabalho eficaz!",
   "device": "Selecione o dispositivo no qual você vai se registrar:",
+  "category": "Escolher categoria",
+  "instruction": "Escolha a instrução",
   "buttons": {
     "browser": "Computador",
     "mobile": "Telefone",

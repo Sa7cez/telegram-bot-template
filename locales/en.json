@@ -1,6 +1,8 @@
 {
-  "mainMenu": "*Instructions*\n\nPrepared detailed instructions for working with IBT token and pool x3.14.\n\nJust choose the right topic and learn about everything you need for effective work!",
+  "mainMenu": "*Instructions*\n\nWe prepared detailed instructions for working with IBT token and pool x3.14.\n\nJust choose the right topic and learn about everything you need for effective work!",
   "device": "Select the device on which you are going to register:",
+  "category": "Choose category",
+  "instruction": "Choose instruction",
   "buttons": {
     "browser": "Computer",
     "mobile": "Phone",

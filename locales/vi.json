@@ -1,6 +1,8 @@
 {
   "mainMenu": "*Hướng dẫn*\n\nChuẩn bị hướng dẫn chi tiết để làm việc với mã thông báo IBT và Pool X3.14.\n\nChỉ cần chọn đúng chủ đề và tìm hiểu về mọi thứ bạn cần cho công việc hiệu quả!",
   "device": "Chọn thiết bị mà bạn sẽ đăng ký:",
+  "category": "Chọn danh mục",
+  "instruction": "Chọn hướng dẫn",
   "buttons": {
     "browser": "Máy vi tính",
     "mobile": "Điện thoại",
