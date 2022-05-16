@@ -185,10 +185,12 @@ const parseGoogle = async (url = 'https://docs.google.com/spreadsheets/d/1ZuRuV8
       const sheet = await doc.sheetsByIndex[sheetIndex]
       const rows = await sheet.getRows();
       let device = 'browser'
+      let category = 'none'
       Object.keys(langs).forEach(lang => temp[lang] = [])
       CLOSED = false
       rows.forEach((row, index) => {
         if (row.device) device = row.device.toLowerCase();
+        if (row.category) category = row.category;
         if (row.state === 'OFF') CLOSED = true
         Object.keys(langs).forEach(lang => {
           let langlink = `${lang}_link`
@@ -196,6 +198,7 @@ const parseGoogle = async (url = 'https://docs.google.com/spreadsheets/d/1ZuRuV8
             temp[lang].push({
               id: index,
               device: device,
+              category: category,
               title: row[lang],
               link: row[langlink]
             })
@@ -216,8 +219,9 @@ const parseGoogle = async (url = 'https://docs.google.com/spreadsheets/d/1ZuRuV8
 }
 
 const getUserArticles = (ctx) => instructions[ctx.i18n.locale()]?.filter(item => item.device === ctx.session.device) || []
+const getUserCategories = (ctx) => [...new Set(instructions[ctx.i18n.locale()]?.filter(item => item.device === ctx.session.device).map(item => item.category))] || []
 
-const list = async (ctx, markdown = true) => {
+const list = async (ctx, category = 'none', markdown = true) => {
   let mark = Extra.webPreview(false)
   if (markdown) mark = mark.markdown()
   else mark = mark.HTML()
@@ -225,12 +229,35 @@ const list = async (ctx, markdown = true) => {
   let buttons = []
 
   if (Object.keys(instructions).length <= 0) instructions = await parseGoogle()
-  let articles = await getUserArticles(ctx)
+  let articles = getUserArticles(ctx).filter(item => item.category === category)
 
   if (articles.length === 0)
     return changeDevice(ctx)
   
   articles.map(item => buttons.push(ib(item.title, `link_${item.id}`)))
+  
+  buttons.push([
+    { text: ctx.i18n.t('buttons.back'), callback_data: 'back' },
+  ])
+
+  return mark.markup((m) => m.inlineKeyboard(buttons))
+}
+
+const categories = async (ctx, markdown = true) => {
+  let mark = Extra.webPreview(false)
+  if (markdown) mark = mark.markdown()
+  else mark = mark.HTML()
+  
+  let buttons = []
+
+  if (Object.keys(instructions).length <= 0) instructions = await parseGoogle()
+  let articles = getUserCategories(ctx)
+  console.log(articles)
+
+  if (articles.length === 0)
+    return changeDevice(ctx)
+  
+  articles.map((item, index) => buttons.push(ib(item, `category_${index}`)))
   
   buttons.push([
     { text: ctx.i18n.t('buttons.back'), callback_data: 'changeDevice' },
@@ -248,7 +275,7 @@ const changeDevice = (ctx) => ctx.reply(ctx.i18n.t('device'), twoButtons(ctx.i18
 
 const main = async (ctx) => {
   if (!ctx.session.device) return changeDevice(ctx)
-  ctx.reply(ctx.i18n.t('mainMenu'), await list(ctx)).catch(e => console.log(e))
+  ctx.reply(ctx.i18n.t('mainMenu'), await categories(ctx)).catch(e => console.log(e))
 }
 
 // Command and other
@@ -368,6 +395,10 @@ bot
     ctx.answerCbQuery('Ok!')
     return main(ctx)
   })
+  .action(/category_(.+)/, async ctx => {
+    console.log(getUserCategories(ctx)[ctx.match[1]])
+    return ctx.reply(ctx.i18n.t('mainMenu'), await list(ctx, getUserCategories(ctx)[ctx.match[1]])).catch(e => console.log(e))
+  })
   .action(/link_(.+)/, ctx => {
     try {
       const article = getUserArticles(ctx).filter(item => item.id === parseInt(ctx.match[1]))[0]
@@ -381,7 +412,7 @@ bot
   .action('refresh', async ctx => {
     ctx.answerCbQuery('Скачиваем!')
     instructions = await parseGoogle()
-    await ctx.reply(['Для подгрузки превью введите команду /preview'])
+    await ctx.reply('Для подгрузки превью введите команду /preview')
     return main(ctx)
   })
   .command('preview', async ctx => {
