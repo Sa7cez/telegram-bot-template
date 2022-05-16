@@ -193,7 +193,6 @@ const parseGoogle = async (url = 'https://docs.google.com/spreadsheets/d/1ZuRuV8
       catNames.pt[row.KEY] = row.PT
       catNames.id[row.KEY] = row.ID
     })
-    console.log(catNames)
 
     sheet = await doc.sheetsByIndex[0]
     let articles = await sheet.getRows();
