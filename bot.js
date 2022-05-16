@@ -282,11 +282,11 @@ const categories = async (ctx, markdown = true) => {
 
 // Main menu
 
-const changeDevice = (ctx) => ctx.reply(ctx.i18n.t('device'), twoButtons(ctx.i18n.t('buttons.browser'), 'browser', ctx.i18n.t('buttons.mobile'), 'mobile'))
+const changeDevice = (ctx) => ctx.reply(ctx.i18n.t('mainMenu') + '\n\n' + ctx.i18n.t('device'), twoButtons(ctx.i18n.t('buttons.browser'), 'browser', ctx.i18n.t('buttons.mobile'), 'mobile'))
 
 const main = async (ctx) => {
   if (!ctx.session.device) return changeDevice(ctx)
-  ctx.reply(ctx.i18n.t('mainMenu') + '\n\n*' + ctx.i18n.t('category') + ':*', await categories(ctx)).catch(e => console.log(e))
+  ctx.reply('*' + ctx.i18n.t('category') + ':*', await categories(ctx)).catch(e => console.log(e))
 }
 
 // Command and other
@@ -407,7 +407,7 @@ bot
     return main(ctx)
   })
   .action(/category_(.+)/, async ctx => {
-    return ctx.reply(ctx.i18n.t('mainMenu'), await list(ctx, getUserCategories(ctx)[ctx.match[1]])).catch(e => console.log(e))
+    return ctx.reply('*' + ctx.i18n.t('instruction') + ':*', await list(ctx, getUserCategories(ctx)[ctx.match[1]])).catch(e => console.log(e))
   })
   .action(/link_(.+)/, ctx => {
     try {
