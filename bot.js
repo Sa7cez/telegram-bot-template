@@ -268,7 +268,8 @@ const categories = async (ctx, markdown = true) => {
   if (articles.length === 0)
     return changeDevice(ctx)
   
-  articles.map((item, index) => buttons.push(ib(item, `category_${index}`)))
+  articles
+    .map((item, index) => buttons.push(ib(item, `category_${index}`)))
   
   buttons.push([
     { text: ctx.i18n.t('buttons.back'), callback_data: 'changeDevice' },
