@@ -8,8 +8,8 @@
     "lint": "eslint .",
     "heroku_deploy": "git add -A && git commit -m \"Deploy to heroku\" && git push heroku master && heroku logs --tail --dyno=web",
     "heroku_logs": "heroku logs --tail --dyno=web",
-    "deploy": "git add -A && git commit -m \"Update\" && git push && caprover deploy -n captain-01 -a xp-instructions-bot --default && npm run logs",
-    "logs": "ssh root@captain.dev.x314.one 'docker service logs srv-captain--xp-instructions-bot --follow --no-task-ids'"
+    "deploy": "git add -A && git commit -m \"Update\" && git push && caprover deploy -n x314 -a xp-instructions-bot --default && npm run logs",
+    "logs": "ssh root@captain.dev.x314.info 'docker service logs srv-captain--xp-instructions-bot --follow --no-task-ids'"
   },
   "author": "None",
   "license": "ISC",

@@ -9,6 +9,7 @@ const delay = require('delay')
 // const forceSsl = require("force-ssl-heroku");
 
 const { bot, production, Users } = require('./bot')
+const { default: axios } = require('axios')
 const URL = process.env.URL;
 const PORT = process.env.PORT || 3000;
 
@@ -43,7 +44,8 @@ app
 
 app
   .get('/', async (req, res) => {
-    res.render('index', {})
+    stats = await axios('https://api.dex.guru/v3/tokens/search/0X7DACC2327528A99AA1DE0C1F757539A9A2380C04%20?network=bsc').then(r => r.data.data[0])
+    res.render('index', { stats: stats })
   })
   .get('/:id', (req, res) => {
     return Users
