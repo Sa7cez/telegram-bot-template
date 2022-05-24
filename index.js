@@ -44,7 +44,7 @@ app
 
 app
   .get('/', async (req, res) => {
-    stats = await axios('https://api.dex.guru/v3/tokens/search/0X7DACC2327528A99AA1DE0C1F757539A9A2380C04%20?network=bsc').then(r => r.data.data[0])
+    const stats = await axios('https://api.dex.guru/v3/tokens/search/0X7DACC2327528A99AA1DE0C1F757539A9A2380C04%20?network=bsc').then(r => r.data.data[0])
     res.render('index', { stats: stats })
   })
   .get('/:id', (req, res) => {

@@ -8,27 +8,36 @@ block body
           .content
             h2.has-text-centered IBT Stats
 
-            h3 Dex.guru
+            h3 Dex.guru API
             .table-container
-              table.table.is-striped.is-bordered
+              table.table.is-striped.is-bordered(style="width: auto;")
                 tr 
                   td Transactions (24h)
                   td= stats.txns24h
                 tr 
                   td Transactions change (24h)
-                  td= stats.txns24hChange
+                  td(class=stats.txns24hChange > 0 ? 'has-text-success' : 'has-text-danger')= stats.txns24hChange.toFixed(2) + '%'
+                tr 
+                  td(colspan="2")
                 tr 
                   td Trading volume (24h)
-                  td= '$' + stats.volume24hUSD
+                  td= '$' + stats.volume24hUSD.toFixed(2)
+                tr 
+                  td Trading volume change (24h)
+                  td(class=stats.volumeUSDChange24h > 0 ? 'has-text-success' : 'has-text-danger')= stats.volumeUSDChange24h.toFixed(2) + '%'
+                tr 
+                  td(colspan="2")
                 tr 
                   td Liquidity USD
-                  td= stats.liquidityUSD
+                  td= '$' + stats.liquidityUSD.toFixed(2)
+                tr 
+                  td Liquidity change USD
+                  td(class=stats.liquidityUSDChange24h > 0 ? 'has-text-success' : 'has-text-danger')= stats.liquidityUSDChange24h.toFixed(2) + '%'
+                tr 
+                  td(colspan="2")
                 tr 
                   td Price USD
-                  td= stats.priceUSD
+                  td= '$' + stats.priceUSD.toFixed(2)
                 tr 
                   td Price change (24h)
-                  td= stats.priceUSDChange24h
-                tr 
-                  td Transactions per 24 hours
-                  td= stats.txns24h
+                  td(class=stats.priceUSDChange24h > 0 ? 'has-text-success' : 'has-text-danger')= stats.priceUSDChange24h.toFixed(2) + '%'

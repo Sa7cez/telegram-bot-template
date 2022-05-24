@@ -128,7 +128,7 @@ const getUser = (ctx, id) => {
           user = user.data
           
           return `
-*ID:* ${user.id} - [@${user.username}](https://t.me/${user.username})
+*ID: *${user.id} - [@${user.username}](https://t.me/${user.username})
 Name: \`${user.first_name} ${user.last_name || ''}\` ${user.language_code ? ('(' + user.language_code + ')') : ''}
 
 Register: ${user.registered_at.toString().replace('GMT+0500 ', '')}
@@ -426,6 +426,9 @@ bot
     await ctx.reply('Для подгрузки превью введите команду /preview')
     return main(ctx)
   })
+  .action('back', async ctx => {
+    ctx.reply('*' + ctx.i18n.t('category') + ':*', await categories(ctx)).catch(e => console.log(e))
+  })
   .command('preview', async ctx => {
     let links = []
     await Promise.all(Object.values(instructions).map(lang => {
@@ -436,6 +439,35 @@ bot
       console.log(link)
       ctx.reply(link)
     })
+  })
+  .command('stats', async ctx => {
+    const stats = await axios('https://api.dex.guru/v3/tokens/search/0X7DACC2327528A99AA1DE0C1F757539A9A2380C04%20?network=bsc').then(r => r.data.data[0])
+    console.log(stats)
+    ctx.replyWithMarkdown(`
+Contract: \`0x7dAcc2327528A99aa1De0C1F757539A9A2380c04\`
+
+Transactions (24h): *${stats.txns24h.toFixed(0)}*
+Transactions change (24h): *${stats.txns24hChange.toFixed(2)}*
+
+Trading volume (24h): *${stats.volume24hUSD.toFixed(2)}*
+Trading volume change (24h): *${stats.volumeUSDChange24h.toFixed(2)}%*
+
+Liquidity USD: *${stats.liquidityUSD.toFixed(2)}*
+Liquidity change USD: *${stats.liquidityUSDChange24h.toFixed(2)}%*
+
+Price USD: *${stats.priceUSD.toFixed(2)}*
+Price change (24h): *${stats.priceUSDChange24h.toFixed(2)}%*`,
+      Extra.markdown().markup((m) => m.inlineKeyboard([
+        [m.urlButton('Dex.guru', 'https://dex.guru/token/0x7dacc2327528a99aa1de0c1f757539a9a2380c04-bsc'),
+        m.urlButton('DexTools', 'https://www.dextools.io/app/bsc/pair-explorer/0x8430f8f2ebb56ff6729616b0f80ba0d36823ed9a')],
+        [m.urlButton('BscScan', 'https://bscscan.com/address/0x7dacc2327528a99aa1de0c1f757539a9a2380c04')]
+      ]))
+    )
+    const pools = await axios('https://api.x314.info/get/pools', { method: 'GET' }).then(r => r.data)
+    console.log('pools', pools)
+    const stakes = pools?.find(p => p.id === 1)?.stakes?.filter(s => s.stakeIndex === 0)?.length?.toString() || null
+    console.log('stakes', stakes)
+    ctx.reply(`Unique stakes: ${stakes}`)
   })
 
 // Telegram command settings (dropdown on interface or input)
@@ -520,6 +552,8 @@ bot.action('send_spam', async ctx => {
 
 // All other messages
 bot.use(async (ctx) => {
+  if (ctx?.update?.message?.chat.id < 0)
+    return
   return main(ctx)
 })
 
