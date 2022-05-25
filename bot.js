@@ -461,6 +461,8 @@ Price change (24h): *${stats.priceUSDChange24h.toFixed(2)}%*`,
         [m.urlButton('Dex.guru', 'https://dex.guru/token/0x7dacc2327528a99aa1de0c1f757539a9a2380c04-bsc'),
         m.urlButton('DexTools', 'https://www.dextools.io/app/bsc/pair-explorer/0x8430f8f2ebb56ff6729616b0f80ba0d36823ed9a')],
         [m.urlButton('BscScan', 'https://bscscan.com/address/0x7dacc2327528a99aa1de0c1f757539a9a2380c04')]
+        [m.urlButton('CoinGecko', 'https://www.coingecko.com/ru/%D0%9A%D1%80%D0%B8%D0%BF%D1%82%D0%BE%D0%B2%D0%B0%D0%BB%D1%8E%D1%82%D1%8B/international-blockchain-technology')]
+        [m.urlButton('CoinMarketCap', 'https://coinmarketcap.com/currencies/international-blockchain-technology')]
       ]))
     )
     const pools = await axios('https://api.x314.info/get/pools', { method: 'GET' }).then(r => r.data)
