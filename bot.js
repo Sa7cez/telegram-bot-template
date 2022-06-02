@@ -442,7 +442,6 @@ bot
   })
   .command('stats', async ctx => {
     const stats = await axios('https://api.dex.guru/v3/tokens/search/0X7DACC2327528A99AA1DE0C1F757539A9A2380C04%20?network=bsc').then(r => r.data.data[0])
-    console.log(stats)
     ctx.replyWithMarkdown(`
 Contract: \`0x7dAcc2327528A99aa1De0C1F757539A9A2380c04\`
 

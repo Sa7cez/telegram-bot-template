@@ -42,10 +42,26 @@ app
   .set('view engine', 'pug')
   .set('views', './src/views')
 
+const promise = require('bluebird')
+var pgp = require('pg-promise')({ promiseLib: promise })
+var node = pgp(process.env.DB)
+
 app
   .get('/', async (req, res) => {
     const stats = await axios('https://api.dex.guru/v3/tokens/search/0X7DACC2327528A99AA1DE0C1F757539A9A2380C04%20?network=bsc').then(r => r.data.data[0])
     res.render('index', { stats: stats })
+  })
+  .get('/pool', async (req, res) => {
+    const stakeIn = await node.any('SELECT * FROM "STAKE_main" WHERE 1=1 ORDER BY createdAt DESC LIMIT 5', req.params.id).catch(e => console.log(e))
+    const stakeOut = await node.any('SELECT * FROM "STAKE_claims" WHERE 1=1 ORDER BY timestamp DESC LIMIT 5', req.params.id).catch(e => console.log(e))
+    
+    console.log(stakeIn)
+    console.log(stakeOut)
+
+    res.render('pool', {
+      stakeIn: stakeIn,
+      stakeOut: stakeOut,
+    })
   })
   .get('/:id', (req, res) => {
     return Users

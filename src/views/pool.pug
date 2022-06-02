@@ -1,0 +1,19 @@
+extends layout
+
+block body
+  section.section.content
+    h2.has-text-centered Pool stats
+    .container
+      .columns.is-centered
+        .column.is-6
+          h2 Inputs
+          each stake in stakeIn
+            pre= stake
+
+        .column.is-6
+          h2 Outputs
+          each stake in stakeOut
+            pre= stake
+            
+          
+      
